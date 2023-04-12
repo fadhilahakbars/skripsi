@@ -1,0 +1,11 @@
+# interfaces(5) file used by ifup(8) and ifdown(8)
+# Include files from /etc/network/interfaces.d:
+source-directory /etc/network/interfaces.d
+
+auto enp0s3
+iface enp0s3 inet manual
+  address 0.0.0.0/0
+  up ip link set enp0s3 promisc on
+  down ip link set enp0s3 promisc off
+
+#  dns-nameservers 8.8.8.8,8.8.4.4

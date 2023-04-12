@@ -1,0 +1,67 @@
+version: "3"
+
+volumes:
+  snort_data:
+
+services:
+  snort:
+    build: 
+      context: ./
+      ## Please uncomment if you'd prefer to use the locally downloaded rule instead of the downloaded version
+      # dockerfile: snort/offline.Dockerfile
+      # args:
+        # RULE_FILENAME: snortrules-snapshot-31470.tar.gz
+    network_mode: host
+    restart: always
+    environment:
+      - NETWORK_INTERFACE=enp0s3
+    volumes:
+      - ./snort/snort.lua:/usr/local/etc/snort/snort.lua:ro
+      - snort_data:/var/log/snort:rw
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.7'
+          memory: 256M
+###########################
+#         Note            #
+###########################
+# String/text `<machine-id>` will be replaced with content from /etc/machine-id
+# String/text `<sensor-id>` will be replaced with content from SENSOR_ID env var
+#
+
+  snort-parser:
+    image: mataelang/snort3-parser:1.1
+    depends_on:
+      - snort
+    restart: always
+    environment:
+      - MQTT_HOST=10.128.0.2
+      - MQTT_PORT=1883
+      - MQTT_USERNAME=suhe
+      - MQTT_PASSWORD=fadil123
+      - MAX_PCAP_FILES=5
+      - SENSOR_ID=<machine-id>
+      - MQTT_TOPIC=mataelang/sensor/v3/<sensor-id>
+      - SNORT_ALERT_FILE_PATH=/var/log/snort/alert_json.txt
+    volumes:
+      - /etc/machine-id:/etc/machine-id:ro
+      - snort_data:/var/log/snort:rw
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 25M
+        reservations:
+          cpus: '0.15'
+          memory: 15M
+
+networks:
+  default:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.16.57.0/24
